@@ -35,8 +35,15 @@ CLIENTS_FOLDER = 'clients'
 API_BASE_URL = 'https://daisysms.com/stubs/handler_api.php'
 
 # Database setup
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///numbers.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://numbers_vk2g_user:zelNbPMa0XxxnnghpijFmOBU37kOYKaa@dpg-d1v35u3uibrs7390qi90-a.oregon-postgres.render.com/numbers_vk2g?sslmode=require'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'connect_args': {
+        'sslmode': 'require'
+    },
+    'pool_size': 5,
+    'pool_recycle': 3600
+}
 db = SQLAlchemy(app)
 
 class Client(db.Model):
