@@ -35,7 +35,7 @@ CLIENTS_FOLDER = 'clients'
 API_BASE_URL = 'https://daisysms.com/stubs/handler_api.php'
 
 # Database setup
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///numbers.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///numbers.db').replace('postgres://', 'postgresql://')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
