@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #002366;
+            --secondary: #BF0A30;
+            --light: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light);
+            padding: 20px;
+        }
+
+        .bg-image {
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            background-image: url('https://avatars.mds.yandex.net/get-mpic/4101287/img_id1519580686837489546.jpeg/orig');
+            background-size: cover;
+            background-position: center;
+            filter: blur(8px) brightness(0.7);
+            z-index: -1;
+            transform-origin: center;
+            transition: transform 0.1s linear;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #001a4d 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-header:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--secondary);
+        }
+
+        .card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border: none;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #001a4d 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .card-header:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--secondary);
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary) 0%, #001a4d 100%);
+            border: none;
+            border-radius: 5px;
+            padding: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(0, 35, 102, 0.25);
+        }
+
+        .btn-outline-danger {
+            border-color: var(--secondary);
+            color: var(--secondary);
+        }
+
+        .btn-outline-danger:hover {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .info-card {
+            border-left: 4px solid var(--primary);
+        }
+
+        .info-item {
+            border-right: 1px solid #eee;
+            padding: 10px;
+        }
+
+        .info-item:last-child {
+            border-right: none;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .info-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .console {
+            background-color: #212529;
+            color: #f8f9fa;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .badge-asleep {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .badge-waiting {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .badge-success {
+            background-color: #198754;
+            color: #fff;
+        }
+
+        .badge-expired {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .countdown-timer {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .timer-waiting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .timer-asleep {
+            background-color: #cfe2ff;
+            color: #084298;
+        }
+
+        .sms-text {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 35, 102, 0.05);
+        }
+
+        .status-cell {
+            min-width: 200px;
+            white-space: nowrap;
+        }
+
+        .phone-cell {
+            min-width: 140px;
+        }
+
+        .password-change {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-image" id="bgImage"></div>
+    
+    <div class="container">
+        <div class="dashboard-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0"><i class="fas fa-phone me-2"></i>User Dashboard</h1>
+                <button class="btn btn-outline-light" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                </button>
+            </div>
+        </div>
+        
+        <!-- Client Info Card -->
+        <div class="card info-card">
+            <div class="card-header">
+                <i class="fas fa-user-circle me-2"></i>User Information
+            </div>
+            <div class="card-body">
+                <div class="row" id="clientInfo">
+                    <div class="col-md-3 info-item">
+                        <div class="info-label">Username</div>
+                        <div class="info-value" id="username"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                    <div class="col-md-2 info-item">
+                        <div class="info-label">Tariff</div>
+                        <div class="info-value" id="service"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                    <div class="col-md-2 info-item">
+                        <div class="info-label">Price per Day</div>
+                        <div class="info-value" id="rate"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                    <div class="col-md-2 info-item">
+                        <div class="info-label">Phone</div>
+                        <div class="info-value" id="phone"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                    <div class="col-md-3 info-item">
+                        <div class="info-label">Balance</div>
+                        <div class="info-value" id="doubled_balance"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="info-label">Paid rental time</div>
+                        <div class="info-value" id="rental_days"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Password Change Section -->
+                <div class="password-change">
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#passwordModal">
+                        <i class="fas fa-key me-1"></i> Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-list-check me-2"></i>Your Active Numbers
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Service</th>
+                                        <th class="phone-cell">Phone</th>
+                                        <th>Code</th>
+                                        <th>Cost</th>
+                                        <th class="status-cell">Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activeNumbers">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">Loading data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-gear me-2"></i>Control Panel
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2 d-md-block mb-3">
+                            <button id="wakeUpBtn" class="btn btn-warning me-2">
+                                <i class="fas fa-bell me-1"></i>Wake Up
+                            </button>
+                            <button id="checkStatusBtn" class="btn btn-info">
+                                <i class="fas fa-sync-alt me-1"></i>Check Status
+                            </button>
+                        </div>
+                        <div class="console" id="console">
+                            <div class="text-info">System initialized. Ready to use.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordModalLabel"><i class="fas fa-key me-2"></i>Change Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="changePassword()">Change Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const refreshInterval = 10000;
+        const activeNumbersTable = document.getElementById('activeNumbers');
+        const wakeUpBtn = document.getElementById('wakeUpBtn');
+        const checkStatusBtn = document.getElementById('checkStatusBtn');
+        const consoleOutput = document.getElementById('console');
+
+        // Store client email in sessionStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientEmail = urlParams.get('client_email') || '';
+        if (clientEmail) {
+            sessionStorage.setItem('user_email', clientEmail);
+        }
+
+        // Load client info and numbers on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadClientInfo();
+            loadNumbers();
+            setInterval(loadNumbers, refreshInterval);
+            setInterval(loadClientInfo, 300000);
+            
+            // Параллакс-эффект для фона
+            document.addEventListener('mousemove', function(e) {
+                const bg = document.getElementById('bgImage');
+                const x = e.clientX / window.innerWidth;
+                const y = e.clientY / window.innerHeight;
+                
+                bg.style.transform = `scale(1.05) translate(${x * 20}px, ${y * 20}px)`;
+            });
+        });
+
+        async function loadClientInfo() {
+            try {
+                const response = await fetch('/api/client_info', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                document.getElementById('username').innerHTML = `<i class="fas fa-user"></i> ${data.username}`;
+                document.getElementById('service').innerHTML = `<i class="fas fa-credit-card"></i> ${data.service}`;
+                document.getElementById('rate').innerHTML = `<i class="fas fa-money-bill-wave"></i> $${data.rate.toFixed(2)}`;
+                document.getElementById('phone').innerHTML = `<i class="fas fa-phone"></i> ${data.phone}`;
+                document.getElementById('doubled_balance').innerHTML = `<i class="fas fa-wallet"></i> $${data.doubled_balance.toFixed(2)}`;
+                document.getElementById('rental_days').innerHTML = `<i class="fas fa-clock"></i> ${data.rental_days} days`;
+                
+            } catch (error) {
+                console.error('Error loading client info:', error);
+                document.getElementById('username').textContent = 'Error loading data';
+                logToConsole(`Error loading client info: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadNumbers() {
+            try {
+                const response = await fetch('/api/get_numbers', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                renderNumbers(data);
+            } catch (error) {
+                console.error('Error loading numbers:', error);
+                logToConsole(`Error loading numbers: ${error.message}`, 'error');
+            }
+        }
+
+        function renderNumbers(numbers) {
+            if (!Array.isArray(numbers)) {
+                activeNumbersTable.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading data</td></tr>';
+                return;
+            }
+
+            activeNumbersTable.innerHTML = '';
+            
+            if (numbers.length === 0) {
+                activeNumbersTable.innerHTML = '<tr><td colspan="7" class="text-center py-4">No active numbers found</td></tr>';
+                return;
+            }
+            
+            numbers.forEach(num => {
+                const row = document.createElement('tr');
+                row.id = `row-${num.activation_id}`;
+                
+                let statusText = num.status || 'Unknown';
+                let badgeClass = 'bg-secondary';
+                let timerClass = '';
+                let endTime = 0;
+                let smsDisplay = num.sms_text || '';
+                
+                if (statusText.includes('Waiting')) {
+                    statusText = 'Waiting';
+                    badgeClass = 'badge-waiting';
+                    endTime = num.expires_at;
+                    timerClass = 'timer-waiting';
+                } 
+                else if (statusText === 'Asleep') {
+                    badgeClass = 'badge-asleep';
+                    endTime = num.wakeup_at;
+                    timerClass = 'timer-asleep';
+                }
+                else if (statusText.includes('SMS Received')) {
+                    badgeClass = 'badge-success';
+                }
+                else if (statusText.includes('Expired')) {
+                    badgeClass = 'badge-expired';
+                    statusText = 'Expired';
+                }
+                
+                row.innerHTML = `
+                    <td>${num.activation_id || 'N/A'}</td>
+                    <td>${num.service || 'Unknown'}</td>
+                    <td class="phone-cell">${formatPhone(num.phone) || 'N/A'}</td>
+                    <td>${smsDisplay}</td>
+                    <td>$${num.cost || '0.00'}</td>
+                    <td class="status-cell">
+                        <span class="badge ${badgeClass}">${statusText}</span>
+                        ${endTime ? `
+                            <span class="countdown-timer ${timerClass}" 
+                                 data-end="${endTime}"
+                                 title="${statusText === 'Waiting' ? 'Expires' : 'Wakes'} at ${new Date(endTime * 1000).toLocaleString()}">
+                                Calculating...
+                            </span>
+                        ` : ''}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeNumber('${num.activation_id}')">
+                            <i class="fas fa-trash"></i> Cancel
+                        </button>
+                    </td>
+                `;
+                
+                activeNumbersTable.appendChild(row);
+            });
+            
+            updateAllCountdowns();
+        }
+
+        function getFirstActiveNumberId() {
+            const firstRow = document.querySelector('#activeNumbers tr:not([style*="display: none"])');
+            if (!firstRow || firstRow.cells[0].textContent.includes('Loading')) {
+                return null;
+            }
+            return firstRow.cells[0].textContent.trim();
+        }
+
+        function updateAllCountdowns() {
+            const now = new Date();
+            
+            document.querySelectorAll('.countdown-timer').forEach(timer => {
+                const endTimestamp = parseInt(timer.getAttribute('data-end'));
+                if (isNaN(endTimestamp)) return;
+                
+                const endTime = new Date(endTimestamp * 1000);
+                const diff = Math.floor((endTime - now) / 1000);
+                const row = timer.closest('tr');
+                const badge = row.querySelector('.badge');
+                
+                if (diff <= 0) {
+                    if (badge.classList.contains('badge-asleep')) {
+                        badge.className = 'badge badge-waiting';
+                        badge.textContent = 'Waiting';
+                        
+                        const newEndTime = new Date(now.getTime() + 900000);
+                        timer.setAttribute('data-end', Math.floor(newEndTime.getTime() / 1000));
+                        timer.className = 'countdown-timer timer-waiting';
+                    } 
+                    else if (badge.classList.contains('badge-waiting')) {
+                        badge.className = 'badge badge-expired';
+                        badge.textContent = 'Expired';
+                        timer.textContent = 'Expired';
+                        timer.className = 'countdown-timer';
+                        timer.style.animation = '';
+                    } 
+                    else {
+                        timer.textContent = 'Expired';
+                        timer.className = 'countdown-timer';
+                    }
+                } 
+                else {
+                    const hours = Math.floor(diff / 3600);
+                    const minutes = Math.floor((diff % 3600) / 60);
+                    const seconds = diff % 60;
+                    
+                    timer.textContent = `${hours > 0 ? hours + 'h ' : ''}${minutes}m ${seconds}s`;
+                    timer.style.animation = diff < 60 ? 'blink 1s infinite' : '';
+                }
+            });
+        }
+
+        wakeUpBtn.addEventListener('click', async () => {
+            logToConsole('Sending wake up request...', 'info');
+            
+            try {
+                const response = await fetch('/api/wake_up', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    logToConsole(`Error: ${data.error}`, 'error');
+                    return;
+                }
+                
+                logToConsole(`API response: ${data.status}`, 'info');
+                
+                // Handle the response
+                const handleResponse = await fetch('/api/handle_response', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        response: data.status,
+                        client: sessionStorage.getItem('user_email')
+                    }),
+                    credentials: 'include'
+                });
+                
+                const result = await handleResponse.json();
+                if (result.success) {
+                    logToConsole('Number activated successfully', 'success');
+                    await loadNumbers();
+                } else {
+                    logToConsole(`Failed: ${result.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Wake up error:', error);
+                logToConsole(`Request failed: ${error.message}`, 'error');
+            }
+        });
+
+        checkStatusBtn.addEventListener('click', async () => {
+            const activationId = getFirstActiveNumberId();
+            if (!activationId) {
+                logToConsole('No active numbers available', 'error');
+                return;
+            }
+            
+            logToConsole(`Checking status for ID: ${activationId}`, 'info');
+            
+            try {
+                const response = await fetch(`/api/get_status?activationId=${activationId}`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    logToConsole(`Error: ${data.error}`, 'error');
+                    return;
+                }
+                
+                if (data.status.startsWith('STATUS_OK:')) {
+                    const smsText = data.status.split(':')[1];
+                    logToConsole(`SMS received: ${smsText}`, 'success');
+                    
+                    // Update status via handle_response
+                    const handleResponse = await fetch('/api/handle_response', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            response: data.status,
+                            client: sessionStorage.getItem('user_email')
+                        }),
+                        credentials: 'include'
+                    });
+                    
+                    const result = await handleResponse.json();
+                    if (!result.success) {
+                        logToConsole(`Failed to update status: ${result.error || 'Unknown error'}`, 'error');
+                    }
+                } 
+                else if (data.status === 'STATUS_WAIT_CODE') {
+                    logToConsole('Waiting for SMS code', 'info');
+                } 
+                else {
+                    logToConsole(`Server response: ${data.status}`, 'info');
+                }
+                
+                await loadNumbers();
+            } catch (error) {
+                console.error('Check status error:', error);
+                logToConsole(`Request failed: ${error.message}`, 'error');
+            }
+        });
+
+        function formatPhone(phone) {
+            if (!phone) return '';
+            const cleaned = phone.toString().replace(/\D/g, '');
+            
+            if (cleaned.length === 11 && cleaned.startsWith('1')) {
+                return `+1 (${cleaned.substring(1,4)}) ${cleaned.substring(4,7)}-${cleaned.substring(7)}`;
+            }
+            return `+${cleaned}`;
+        }
+
+        function logToConsole(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const msg = document.createElement('div');
+            
+            const colors = {
+                error: 'text-danger',
+                success: 'text-success',
+                info: 'text-info',
+                warning: 'text-warning'
+            };
+            
+            msg.innerHTML = `
+                <span class="text-muted">[${timestamp}]</span>
+                <span class="${colors[type] || 'text-muted'}">${message}</span>
+            `;
+            
+            consoleOutput.appendChild(msg);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        async function removeNumber(activationId) {
+            if (!activationId || !confirm('Are you sure you want to cancel this number?')) return;
+            
+            try {
+                const response = await fetch(`/api/remove_number?activation_id=${activationId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    logToConsole(`Cancelled number ${activationId}`, 'success');
+                    await loadNumbers();
+                } else {
+                    logToConsole(data.error || 'Failed to cancel number', 'error');
+                }
+            } catch (error) {
+                console.error('Remove number error:', error);
+                logToConsole(`Error cancelling number: ${error.message}`, 'error');
+            }
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                logToConsole('All fields are required', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                logToConsole('New passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/change_password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    }),
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    logToConsole('Password changed successfully', 'success');
+                    $('#passwordModal').modal('hide');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    logToConsole(data.error || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                console.error('Change password error:', error);
+                logToConsole(`Error changing password: ${error.message}`, 'error');
+            }
+        }
+
+        function logout() {
+            fetch('/logout', {
+                credentials: 'include'
+            })
+            .then(() => {
+                sessionStorage.removeItem('user_email');
+                window.location.href = '/login';
+            })
+            .catch(err => {
+                console.error('Logout error:', err);
+                logToConsole(`Logout error: ${err.message}`, 'error');
+            });
+        }
+
+        setInterval(updateAllCountdowns, 1000);
+
+        window.removeNumber = removeNumber;
+    </script>
+</body>
+</html>
