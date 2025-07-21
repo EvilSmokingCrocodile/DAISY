@@ -1,0 +1,10 @@
+databases:
+  - name: numbers_db
+    databaseName: numbers_db
+    user: numbers_user
+    plan: free
+    region: oregon
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: "Allow all IPs"
+version: "1"
