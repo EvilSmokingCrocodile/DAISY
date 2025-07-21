@@ -10,14 +10,35 @@ import logging
 from logging.handlers import RotatingFileHandler
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# Инициализация приложения
 app = Flask(__name__)
-# Сначала инициализируем db
-db = SQLAlchemy()
-
 CORS(app, supports_credentials=True)
-app.secret_key = 'your_secret_key_here'
+
+# Конфигурация приложения
+app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key_here')
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = False
+
+# Настройка базы данных
+db = SQLAlchemy()
+
+# Конфигурация подключения к БД
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///numbers.db'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300
+}
+
+# Инициализация расширений
+db.init_app(app)
 
 # Настройка логирования
 def setup_logging():
@@ -33,26 +54,14 @@ def setup_logging():
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Configuration
+# Конфигурация приложения
 CLIENTS_FOLDER = 'clients'
 API_BASE_URL = 'https://daisysms.com/stubs/handler_api.php'
 
-# Затем настраиваем подключение
-database_url = os.environ.get('DATABASE_URL')
-if database_url:
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///numbers.db'
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Инициализируем приложение с db
-db.init_app(app)
-
-
+# Модели должны быть объявлены после инициализации db
 class Client(db.Model):
+    __tablename__ = 'clients'
+    
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
@@ -72,6 +81,8 @@ class Client(db.Model):
         return check_password_hash(self.password_hash, password)
 
 class ActiveNumber(db.Model):
+    __tablename__ = 'active_numbers'
+    
     id = db.Column(db.Integer, primary_key=True)
     activation_id = db.Column(db.String(50), unique=True)
     service = db.Column(db.String(50))
@@ -84,6 +95,9 @@ class ActiveNumber(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     client_email = db.Column(db.String(100))
 
+# Создание таблиц (только для разработки)
+with app.app_context():
+    db.create_all()
 def get_accurate_utc():
     """Надежное получение UTC времени с логированием"""
     try:
