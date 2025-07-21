@@ -38,15 +38,12 @@ API_BASE_URL = 'https://daisysms.com/stubs/handler_api.php'
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # Обязательная замена для psycopg3
+    # Для psycopg3 используем другой префикс
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///numbers.db'
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
