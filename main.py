@@ -9,48 +9,14 @@ import pytz
 import logging
 from logging.handlers import RotatingFileHandler
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlalchemy
 
-# Fix for psycopg3 compatibility
-sqlalchemy.engine.Engine._has_events = False
-
-# Initialize app
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
-
-# App configuration
-app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key_here')
+app.secret_key = 'your_secret_key_here'
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = False
 
-# Database setup
-db = SQLAlchemy()
-
-# Database configuration
-database_url = os.environ.get('DATABASE_URL')
-if database_url:
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql+psycopg://', 1)
-    elif database_url.startswith('postgresql://'):
-        database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///numbers.db'
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_pre_ping': True,
-    'pool_recycle': 300,
-    'connect_args': {
-        'connect_timeout': 5,
-        'options': '-c timezone=utc'
-    }
-}
-
-# Initialize extensions
-db.init_app(app)
-
-# Logging setup
+# Настройка логирования
 def setup_logging():
     logging.basicConfig(
         level=logging.DEBUG,
@@ -64,14 +30,16 @@ def setup_logging():
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# App configuration
+# Configuration
 CLIENTS_FOLDER = 'clients'
 API_BASE_URL = 'https://daisysms.com/stubs/handler_api.php'
 
-# Models
+# Database setup
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///numbers.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
 class Client(db.Model):
-    __tablename__ = 'clients'
-    
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
@@ -91,8 +59,6 @@ class Client(db.Model):
         return check_password_hash(self.password_hash, password)
 
 class ActiveNumber(db.Model):
-    __tablename__ = 'active_numbers'
-    
     id = db.Column(db.Integer, primary_key=True)
     activation_id = db.Column(db.String(50), unique=True)
     service = db.Column(db.String(50))
@@ -105,9 +71,8 @@ class ActiveNumber(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     client_email = db.Column(db.String(100))
 
-# Helper functions
 def get_accurate_utc():
-    """Get precise UTC time with fallback"""
+    """Надежное получение UTC времени с логированием"""
     try:
         logger.debug("Attempting to get precise UTC time")
         
@@ -131,7 +96,6 @@ def get_accurate_utc():
         return datetime.now(timezone.utc)
 
 def load_client(email):
-    """Load client data from database"""
     try:
         client = Client.query.filter_by(email=email).first()
         if client:
@@ -154,7 +118,6 @@ def load_client(email):
         return None
 
 def migrate_clients_to_db():
-    """Migrate clients from JSON files to database"""
     with app.app_context():
         if not os.path.exists(CLIENTS_FOLDER):
             return
@@ -182,7 +145,7 @@ def migrate_clients_to_db():
                             rate_per_day=data.get('rate_per_day', 0.80),
                             paid_until=datetime.fromisoformat(data['paid_until']) if data.get('paid_until') else None
                         )
-                        client.set_password("default_password")
+                        client.set_password("default_password")  # Temporary password
                         
                         db.session.add(client)
                         db.session.commit()
@@ -193,7 +156,6 @@ def migrate_clients_to_db():
                     db.session.rollback()
 
 def get_client_balance(api_key):
-    """Get client balance from DaisySMS API"""
     try:
         logger.debug(f"Getting balance for API key: {api_key[:5]}...")
         params = {
@@ -213,7 +175,6 @@ def get_client_balance(api_key):
         return 0.0
 
 def load_tariffs():
-    """Load service tariffs from file"""
     try:
         with open('tariffs.json', 'r') as f:
             tariffs = json.load(f)
@@ -223,13 +184,13 @@ def load_tariffs():
         logger.error(f"Error loading tariffs: {str(e)}", exc_info=True)
         return {"Default": 0.50}
 
-# Routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         access_key = request.form.get('access_key')
         logger.info(f"Login attempt with access key")
         
+        # Ищем клиента с таким password_hash
         client = Client.query.filter_by(password_hash=access_key).first()
         if client:
             session['user_email'] = client.email
@@ -307,7 +268,7 @@ def get_numbers():
         client_email = session['user_email']
         logger.debug(f"Current time: {now}, Client: {client_email}")
 
-        # Update sleeping numbers
+        # Обновление спящих номеров
         asleep_numbers = ActiveNumber.query.filter(
             ActiveNumber.client_email == client_email,
             ActiveNumber.status == 'Asleep',
@@ -321,7 +282,7 @@ def get_numbers():
                 num.expires_at = now + timedelta(seconds=900)
                 logger.debug(f"Woke up number {num.activation_id}, new expires_at: {num.expires_at}")
 
-        # Remove expired numbers
+        # Удаление просроченных номеров
         expired_numbers = ActiveNumber.query.filter(
             ActiveNumber.client_email == client_email,
             ActiveNumber.status == 'Waiting',
@@ -644,15 +605,11 @@ def change_password():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# Initialize database
+# Create tables and migrate data
 with app.app_context():
-    try:
-        db.create_all()
-        migrate_clients_to_db()
-        logger.info("Database initialized successfully")
-    except Exception as e:
-        logger.error(f"Database initialization failed: {str(e)}", exc_info=True)
-        raise
+    db.create_all()
+    migrate_clients_to_db()
+    logger.info("Database tables created/verified and clients migrated")
 
 if __name__ == '__main__':
     logger.info("Starting application")
